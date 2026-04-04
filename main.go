@@ -2,8 +2,10 @@ package main
 
 import (
 	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"net"
+	"os"
 	"strings"
 )
 
@@ -19,9 +21,9 @@ var resourceRecordsID = map[uint16]string{
 }
 
 type Records struct {
-	IPv4   string
-	IPv6   string
-	Domain string
+	IPv4   string `json:"ipv4"`
+	IPv6   string `json:"ipv6"`
+	Domain string `json:"domain,omitempty"`
 }
 
 func (r *Records) IPv4Hex() string {
@@ -40,7 +42,23 @@ func (r *Records) IPv6Hex() string {
 	return strings.ReplaceAll(r.IPv6, ":", "")
 }
 
-var domains = map[string]Records{}
+var domains map[string]Records
+
+func loadDomains(path string) (map[string]Records, error) {
+	var d map[string]Records
+
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return nil, err
+	}
+
+	err = json.Unmarshal(data, &d)
+	if err != nil {
+		return nil, err
+	}
+
+	return d, nil
+}
 
 func parseDomain(msg []byte) (string, int) {
 	var labels []string
@@ -135,6 +153,12 @@ func proxy(clientAddr *net.UDPAddr, msg []byte, serverConn *net.UDPConn) {
 }
 
 func main() {
+	var err error
+	domains, err = loadDomains("domains.json")
+	if err != nil {
+		panic(err)
+	}
+
 	addr, _ := net.ResolveUDPAddr("udp", ":53")
 	conn, err := net.ListenUDP("udp", addr)
 	if err != nil {

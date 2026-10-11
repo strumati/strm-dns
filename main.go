@@ -159,6 +159,16 @@ func main() {
 		panic(err)
 	}
 
+	go startDNS()
+
+	go startAPI()
+
+	fmt.Println("DNS und TLS Server laufen")
+
+	select {}
+}
+
+func startDNS() {
 	addr, _ := net.ResolveUDPAddr("udp", ":53")
 	conn, err := net.ListenUDP("udp", addr)
 	if err != nil {

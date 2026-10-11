@@ -1,4 +1,6 @@
 main
+strm-dns
+key
 server-cert.pem
 server-key.pem
 domains.json

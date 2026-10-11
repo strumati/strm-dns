@@ -1,0 +1,4 @@
+main
+server-cert.pem
+server-key.pem
+domains.json

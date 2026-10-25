@@ -72,7 +72,7 @@ func parseDomain(msg []byte) (string, int) {
 		labels = append(labels, string(msg[i:i+length]))
 		i += length
 	}
-	return strings.Join(labels, "."), i + 1
+	return strings.ToLower(strings.Join(labels, ".")), i + 1
 }
 
 func handleDNS(conn *net.UDPConn, addr *net.UDPAddr, msg []byte) {

@@ -20,6 +20,8 @@ var resourceRecordsID = map[uint16]string{
 	28: "AAAA",
 }
 
+var config map[string]interface{}
+
 type Records struct {
 	IPv4   string `json:"ipv4"`
 	IPv6   string `json:"ipv6"`
@@ -123,7 +125,9 @@ func handleDNS(conn *net.UDPConn, addr *net.UDPAddr, msg []byte) {
 	}
 
 	if shouldProxy {
-		proxy(addr, msg, conn)
+		if config["PROXY"].(bool) {
+			proxy(addr, msg, conn)
+		}
 		return
 	}
 
@@ -140,7 +144,7 @@ func handleDNS(conn *net.UDPConn, addr *net.UDPAddr, msg []byte) {
 }
 
 func proxy(clientAddr *net.UDPAddr, msg []byte, serverConn *net.UDPConn) {
-	proxyAddr, _ := net.ResolveUDPAddr("udp", "8.8.8.8:53")
+	proxyAddr, _ := net.ResolveUDPAddr("udp", config["PROXY_ADDR"].(string))
 	conn, _ := net.DialUDP("udp", nil, proxyAddr)
 	defer conn.Close()
 
@@ -154,6 +158,17 @@ func proxy(clientAddr *net.UDPAddr, msg []byte, serverConn *net.UDPConn) {
 
 func main() {
 	var err error
+
+	data, err := os.ReadFile("config.json")
+	if err != nil {
+		panic(err)
+	}
+
+	err = json.Unmarshal(data, &config)
+	if err != nil {
+		panic(err)
+	}
+
 	domains, err = loadDomains("domains.json")
 	if err != nil {
 		panic(err)
@@ -169,14 +184,14 @@ func main() {
 }
 
 func startDNS() {
-	addr, _ := net.ResolveUDPAddr("udp", ":53")
+	addr, _ := net.ResolveUDPAddr("udp", config["LISTEN"].(string))
 	conn, err := net.ListenUDP("udp", addr)
 	if err != nil {
 		panic(err)
 	}
 	defer conn.Close()
 
-	fmt.Println("DNS server running on port 53")
+	fmt.Println("DNS server running on ",config["LISTEN"])
 
 	for {
 		buf := make([]byte, 512)
